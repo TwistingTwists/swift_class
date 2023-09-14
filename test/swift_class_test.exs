@@ -32,7 +32,7 @@ defmodule SwiftClassTest do
 
     test "parses multiple modifiers" do
       input = "font(.largeTitle) bold(true) italic(true)"
-      output = [["font", [".largeTitle"], nil], ["bold", [true], nil], ["italic", [true], nil]]
+      output = [["font", [[".largeTitle", :IME]], nil], ["bold", [true], nil], ["italic", [true], nil]]
 
       assert output == parse(input)
     end
@@ -43,7 +43,7 @@ defmodule SwiftClassTest do
       bold(true)
       italic(true)
       """
-      output = [["font", [".largeTitle"], nil], ["bold", [true], nil], ["italic", [true], nil]]
+      output = [["font", [[".largeTitle", :IME]], nil], ["bold", [true], nil], ["italic", [true], nil]]
 
       assert output == parse(input)
     end
