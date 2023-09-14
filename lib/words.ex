@@ -51,84 +51,11 @@ defmodule Words do
     combinator |> ignore(optional(whitespace(min: 1)))
   end
 
-  # def maybe_brackets do
-  #   true_value =
-  #     string("true")
-  #     |> replace(true)
+  def append_value(rest, args, context, _line, _offset, value) do
+    {rest, args ++ [value], context}
+  end
 
-  #   false_value =
-  #     string("false")
-  #     |> replace(false)
-
-  #   null =
-  #     string("nil")
-  #     |> replace(nil)
-
-  #   frac =
-  #     string(".")
-  #     |> concat(integer(min: 1))
-
-  #   float =
-  #     int()
-  #     |> concat(frac)
-  #     |> reduce({Enum, :join, [""]})
-  #     |> map({String, :to_float, []})
-
-  #   key_value_pair =
-  #     ignore_whitespace()
-  #     |> concat(choice([word(), double_quoted_string()]))
-  #     |> ignore_whitespace()
-  #     |> concat(ignore(string(":")))
-  #     |> ignore_whitespace()
-  #     |> concat(choice([word(), double_quoted_string()]))
-  #     |> wrap()
-
-  #   nested_function_call
-
-  #   ignore(string("("))
-  #   |> choice([
-  #     # can there be a case like
-  #     # input = "foo(1 true false 1.1)"
-  #     repeat(
-  #       # ignore_whitespace()
-  #       choice([
-  #         key_value_pair,
-  #         float,
-  #         int(),
-  #         true_value,
-  #         false_value,
-  #         null,
-  #         word(),
-  #         dotted_word(),
-  #         double_quoted_string()
-  #       ])
-  #       |> ignore_whitespace()
-  #     ),
-  #     ignore_whitespace()
-  #   ])
-  #   |> ignore(string(")"))
-  # end
-
-  # def attribute do
-  #   choice([
-  #     maybe_brackets(),
-  #     standalone_attribute()
-  #   ])
-  #   |> wrap()
-  # end
-
-  # def content_name do
-  #   # {:content}
-  #   valid_content_name =
-  #     ignore(string("{"))
-  #     |> concat(ignore(string(":")))
-  #     |> concat(word())
-  #     |> ignore(string("}"))
-  #     |> map({String, :to_atom, []})
-
-  #   # if there is no content_name, append nil
-  #   invalid_content_name = ignore(string("")) |> post_traverse({:append_value, [nil]})
-
-  #   choice([valid_content_name, invalid_content_name])
-  # end
+  def prepend_value(rest, args, context, _line, _offset, value) do
+    {rest, [value | args], context}
+  end
 end

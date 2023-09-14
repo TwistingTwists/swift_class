@@ -1,7 +1,6 @@
 defmodule BracketAttributes do
   import Words
   import NimbleParsec
-  # import Attribute
 
   true_value =
     string("true")
@@ -34,20 +33,10 @@ defmodule BracketAttributes do
     |> concat(choice([word(), double_quoted_string()]))
     |> wrap()
 
-  def append_value(rest, args, context, _line, _offset, value) do
-    {rest, args ++ [value], context}
-  end
-
-  def prepend_value(rest, args, context, _line, _offset, value) do
-    {rest, [value | args], context}
-  end
-
   defparsec(
     :maybe_brackets,
     ignore(string("("))
-    # choice([
     |> repeat(
-      # ignore_whitespace()
       choice([
         key_value_pair,
         float,
@@ -62,9 +51,6 @@ defmodule BracketAttributes do
       ])
       |> ignore_whitespace()
     )
-
-    # ignore_whitespace()
-    # ])
     |> ignore(string(")")),
     export_combinator: true
   )
@@ -77,11 +63,11 @@ defmodule BracketAttributes do
       whitespace(min: 1) |> replace(true),
       parsec(:maybe_brackets)
     ])
-    |> wrap(),
+    |> wrap()
+    |> parsec(:content_name),
     export_combinator: true
   )
 
-  # content name
   valid_content_name =
     ignore(string("{"))
     |> concat(ignore(string(":")))
@@ -90,7 +76,7 @@ defmodule BracketAttributes do
     |> map({String, :to_atom, []})
 
   # if there is no content_name, append nil
-  invalid_content_name = ignore(string("")) |> post_traverse({:append_value, [nil]})
+  invalid_content_name = empty() |> post_traverse({:append_value, [nil]})
 
   defparsec(
     :content_name,
