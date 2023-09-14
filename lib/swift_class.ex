@@ -11,7 +11,8 @@ defmodule SwiftClass do
       |> concat(word())
       # |> concat(attribute())
       |> parsec(:attribute)
-      |> concat(content_name())
+      # |> concat(content_name())
+      |> parsec(:content_name)
       |> wrap()
     )
 

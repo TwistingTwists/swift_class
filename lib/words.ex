@@ -117,19 +117,18 @@ defmodule Words do
   #   |> wrap()
   # end
 
+  # def content_name do
+  #   # {:content}
+  #   valid_content_name =
+  #     ignore(string("{"))
+  #     |> concat(ignore(string(":")))
+  #     |> concat(word())
+  #     |> ignore(string("}"))
+  #     |> map({String, :to_atom, []})
 
-  def content_name do
-    # {:content}
-    valid_content_name =
-      ignore(string("{"))
-      |> concat(ignore(string(":")))
-      |> concat(word())
-      |> ignore(string("}"))
-      |> map({String, :to_atom, []})
+  #   # if there is no content_name, append nil
+  #   invalid_content_name = ignore(string("")) |> post_traverse({:append_value, [nil]})
 
-    # if there is no content_name, append nil
-    invalid_content_name = ignore(string("")) |> post_traverse({:append_value, [nil]})
-
-    choice([valid_content_name, invalid_content_name])
-  end
+  #   choice([valid_content_name, invalid_content_name])
+  # end
 end

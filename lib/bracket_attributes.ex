@@ -45,26 +45,26 @@ defmodule BracketAttributes do
   defparsec(
     :maybe_brackets,
     ignore(string("("))
-    |> choice([
-      repeat(
-        # ignore_whitespace()
-        choice([
-          key_value_pair,
-          float,
-          int(),
-          true_value,
-          false_value,
-          null,
-          word(),
-          dotted_word(),
-          double_quoted_string()
-        ])
-        |> ignore_whitespace()
-      ),
-      parsec(:attribute)
-
+    # choice([
+    |> repeat(
       # ignore_whitespace()
-    ])
+      choice([
+        key_value_pair,
+        float,
+        int(),
+        true_value,
+        false_value,
+        null,
+        word(),
+        dotted_word(),
+        double_quoted_string(),
+        parsec(:attribute)
+      ])
+      |> ignore_whitespace()
+    )
+
+    # ignore_whitespace()
+    # ])
     |> ignore(string(")")),
     export_combinator: true
   )
@@ -78,6 +78,23 @@ defmodule BracketAttributes do
       parsec(:maybe_brackets)
     ])
     |> wrap(),
+    export_combinator: true
+  )
+
+  # content name
+  valid_content_name =
+    ignore(string("{"))
+    |> concat(ignore(string(":")))
+    |> concat(word())
+    |> ignore(string("}"))
+    |> map({String, :to_atom, []})
+
+  # if there is no content_name, append nil
+  invalid_content_name = ignore(string("")) |> post_traverse({:append_value, [nil]})
+
+  defparsec(
+    :content_name,
+    choice([valid_content_name, invalid_content_name]),
     export_combinator: true
   )
 end
