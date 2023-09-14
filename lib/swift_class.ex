@@ -2,15 +2,13 @@ defmodule SwiftClass do
   @moduledoc false
   import NimbleParsec
   import Words
-
-  # input = "font(.largeTitle) bold italic "
-  # output = [["font", [".largeTitle"], nil], ["bold", [true], nil], ["italic", [true], nil]]
+  import BracketAttributes
 
   classnames =
     repeat(
       ignore(whitespace(min: 0))
       |> concat(word())
-      |> concat(attribute())
+      |> parsec(:attribute)
       |> wrap()
     )
 

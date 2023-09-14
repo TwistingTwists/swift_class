@@ -28,11 +28,28 @@ defmodule SwiftClassTest do
       output = [["background", ["foo", "bar"], nil]]
 
       assert output == parse(input)
+
+      # # space at start and end
+      # input = "background( \"foo\" \"bar\" )"
+      # assert output == parse(input)
+
+      # # space at start only
+      # input = "background( \"foo\" \"bar\")"
+      # assert output == parse(input)
+
+      # space at end only
+      input = "background(\"foo\" \"bar\" )"
+      assert output == parse(input)
     end
 
     test "parses multiple modifiers" do
       input = "font(.largeTitle) bold(true) italic(true)"
-      output = [["font", [[".largeTitle", :IME]], nil], ["bold", [true], nil], ["italic", [true], nil]]
+
+      output = [
+        ["font", [[".largeTitle", :IME]], nil],
+        ["bold", [true], nil],
+        ["italic", [true], nil]
+      ]
 
       assert output == parse(input)
     end
@@ -43,7 +60,12 @@ defmodule SwiftClassTest do
       bold(true)
       italic(true)
       """
-      output = [["font", [[".largeTitle", :IME]], nil], ["bold", [true], nil], ["italic", [true], nil]]
+
+      output = [
+        ["font", [[".largeTitle", :IME]], nil],
+        ["bold", [true], nil],
+        ["italic", [true], nil]
+      ]
 
       assert output == parse(input)
     end
@@ -78,7 +100,7 @@ defmodule SwiftClassTest do
 
     test "parses Implicit Member Expressions" do
       input = "color(.red)"
-      output = [["color", [[".red", :IME]]]]
+      output = [["color", [[".red", :IME]], nil]]
 
       assert output == parse(input)
     end
