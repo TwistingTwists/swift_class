@@ -111,5 +111,12 @@ defmodule SwiftClassTest do
 
       assert output == parse(input)
     end
+
+    test "parses attr value references" do
+      input = "foo(attr(bar))"
+      output = [["foo", [["bar", :attr]], nil]]
+
+      assert output == parse(input)
+    end
   end
 end
