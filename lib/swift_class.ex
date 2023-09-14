@@ -12,9 +12,13 @@ defmodule SwiftClass do
       |> wrap()
     )
 
-
-  defp append_nil(rest, args, context, _line, _offset) do
-    {rest, args ++ [nil], context}
+  defp append_value(rest, args, context, _line, _offset, value) do
+    {rest, args ++ [value], context}
   end
+
+  defp prepend_value(rest, args, context, _line, _offset, value) do
+    {rest, [value | args], context}
+  end
+
   defparsec(:parse, classnames)
 end

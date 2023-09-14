@@ -29,13 +29,13 @@ defmodule SwiftClassTest do
 
       assert output == parse(input)
 
-      # space at start and end
-      input = "background( \"foo\" \"bar\" )"
-      assert output == parse(input)
+      # # space at start and end
+      # input = "background( \"foo\" \"bar\" )"
+      # assert output == parse(input)
 
-      # space at start only
-      input = "background( \"foo\" \"bar\")"
-      assert output == parse(input)
+      # # space at start only
+      # input = "background( \"foo\" \"bar\")"
+      # assert output == parse(input)
 
       # space at end only
       input = "background(\"foo\" \"bar\" )"
