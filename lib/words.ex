@@ -58,4 +58,13 @@ defmodule Words do
   def prepend_value(rest, args, context, _line, _offset, value) do
     {rest, [value | args], context}
   end
+
+  def flip_attr(rest, [[attr], "attr"], context, _line, _offset) when is_binary(attr) do
+    {rest, [:attr, attr], context}
+  end
+
+  # flip_attr should only be called when an "attr" is expected
+  # def flip_attr(rest, args, context, _line, _offset) do
+  #   {rest, args, context}
+  # end
 end
