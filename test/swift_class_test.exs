@@ -13,33 +13,33 @@ defmodule SwiftClassTest do
       input = "bold(true)"
       output = [["bold", [true], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses modifier function with content syntax" do
       input = "background(){:content}"
       output = [["background", [], :content]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses modifier with multiple arguments" do
       input = "background(\"foo\" \"bar\")"
       output = [["background", ["foo", "bar"], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
 
-      # # space at start and end
-      # input = "background( \"foo\" \"bar\" )"
-      # assert output == parse(input)
+      # space at start and end
+      input = "background( \"foo\" \"bar\" )"
+      assert parse(input) == output
 
-      # # space at start only
-      # input = "background( \"foo\" \"bar\")"
-      # assert output == parse(input)
+      # space at start only
+      input = "background( \"foo\" \"bar\")"
+      assert parse(input) == output
 
       # space at end only
       input = "background(\"foo\" \"bar\" )"
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses multiple modifiers" do
@@ -51,7 +51,7 @@ defmodule SwiftClassTest do
         ["italic", [true], nil]
       ]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses multiline" do
@@ -67,56 +67,56 @@ defmodule SwiftClassTest do
         ["italic", [true], nil]
       ]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses string literal value type" do
       input = "foo(\"bar\")"
       output = [["foo", ["bar"], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses numerical types" do
       input = "foo(1 -1 1.1)"
       output = [["foo", [1, -1, 1.1], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses key/value pairs" do
       input = "foo(bar: \"baz\")"
       output = [["foo", [["bar", "baz"]], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses bool and nil values" do
       input = "foo(true false nil)"
       output = [["foo", [true, false, nil], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses Implicit Member Expressions" do
       input = "color(.red)"
       output = [["color", [[".red", :IME]], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses nested function calls" do
       input = "foo(bar(\"baz\"))"
       output = [["foo", [["bar", ["baz"], nil]], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
 
     test "parses attr value references" do
       input = "foo(attr(bar))"
       output = [["foo", [["bar", :attr]], nil]]
 
-      assert output == parse(input)
+      assert parse(input) == output
     end
   end
 end

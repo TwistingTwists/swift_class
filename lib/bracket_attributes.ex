@@ -34,10 +34,28 @@ defmodule BracketAttributes do
     |> wrap()
 
   defparsec(
+    :nested_attribute,
+    choice([
+      string("attr")
+      |> wrap(parsec(:maybe_brackets))
+      |> post_traverse({:flip_attr, []})
+      |> wrap(),
+      word()
+      |> wrap(parsec(:maybe_brackets))
+      |> parsec(:content_name)
+      |> wrap()
+    ]),
+    export_combinator: true
+  )
+
+  defparsec(
     :maybe_brackets,
-    ignore(string("("))
+    ignore_whitespace()
+    |> ignore(string("("))
+    |> ignore_whitespace()
     |> repeat(
       choice([
+        parsec(:nested_attribute),
         key_value_pair,
         float,
         int(),
@@ -46,8 +64,7 @@ defmodule BracketAttributes do
         null,
         word(),
         dotted_word(),
-        double_quoted_string(),
-        parsec(:attribute)
+        double_quoted_string()
       ])
       |> ignore_whitespace()
     )
@@ -60,8 +77,9 @@ defmodule BracketAttributes do
     choice([
       # standalone attribute - eg.
       # bold
-      whitespace(min: 1) |> replace(true),
-      parsec(:maybe_brackets)
+
+      parsec(:maybe_brackets),
+      whitespace(min: 1) |> replace(true)
     ])
     |> wrap()
     |> parsec(:content_name),
