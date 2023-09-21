@@ -8,6 +8,12 @@ defmodule SwiftClassTest do
     output
   end
 
+  def parse_class_block(input) do
+    {:ok, output, _, _, _, _} = SwiftClass.parse_class_block(input)
+
+    output
+  end
+
   describe "parse/1" do
     test "parses modifier function definition" do
       input = "bold(true)"
@@ -43,10 +49,10 @@ defmodule SwiftClassTest do
     end
 
     test "parses multiple modifiers" do
-      input = "font(.largeTitle) bold(true) italic(true)"
+      input = "font(:largeTitle) bold(true) italic(true)"
 
       output = [
-        ["font", [[".largeTitle", :IME]], nil],
+        ["font", [["IME", "largeTitle"]], nil],
         ["bold", [true], nil],
         ["italic", [true], nil]
       ]
@@ -56,13 +62,13 @@ defmodule SwiftClassTest do
 
     test "parses multiline" do
       input = """
-      font(.largeTitle)
+      font(:largeTitle)
       bold(true)
       italic(true)
       """
 
       output = [
-        ["font", [[".largeTitle", :IME]], nil],
+        ["font", [["IME", "largeTitle"]], nil],
         ["bold", [true], nil],
         ["italic", [true], nil]
       ]
@@ -99,8 +105,8 @@ defmodule SwiftClassTest do
     end
 
     test "parses Implicit Member Expressions" do
-      input = "color(.red)"
-      output = [["color", [[".red", :IME]], nil]]
+      input = "color(:red)"
+      output = [["color", [["IME", "red"]], nil]]
 
       assert parse(input) == output
     end
@@ -113,10 +119,42 @@ defmodule SwiftClassTest do
     end
 
     test "parses attr value references" do
-      input = "foo(attr(bar))"
-      output = [["foo", [["bar", :attr]], nil]]
+      input = "foo(attr(\"bar\"))"
+      output = [["foo", [["Attr", "bar"]], nil]]
 
       assert parse(input) == output
     end
+  end
+
+  describe "class block parser" do
+    input = """
+    "color-" <> color_name do
+      foo(true)
+      color(color_name)
+      bar(false)
+    end
+
+    "color-red" do
+      color(:red)
+    end
+    """
+
+    output = [
+      {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color_name, [], Elixir}]},
+      [
+        ["foo", [true], nil],
+        ["color", [{:color_name, [], Elixir}], nil],
+        ["bar", [false], nil]
+      ]},
+      {
+        "color-red",
+        [
+          ["color", [["IME", "red"]]]
+        ]
+      }
+
+    ]
+
+    # assert parse_class_block(input) == output
   end
 end
