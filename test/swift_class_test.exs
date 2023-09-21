@@ -30,21 +30,21 @@ defmodule SwiftClassTest do
     end
 
     test "parses modifier with multiple arguments" do
-      input = "background(\"foo\" \"bar\")"
+      input = "background(\"foo\", \"bar\")"
       output = [["background", ["foo", "bar"], nil]]
 
       assert parse(input) == output
 
       # space at start and end
-      input = "background( \"foo\" \"bar\" )"
+      input = "background( \"foo\", \"bar\" )"
       assert parse(input) == output
 
       # space at start only
-      input = "background( \"foo\" \"bar\")"
+      input = "background( \"foo\", \"bar\")"
       assert parse(input) == output
 
       # space at end only
-      input = "background(\"foo\" \"bar\" )"
+      input = "background(\"foo\", \"bar\" )"
       assert parse(input) == output
     end
 
@@ -84,21 +84,21 @@ defmodule SwiftClassTest do
     end
 
     test "parses numerical types" do
-      input = "foo(1 -1 1.1)"
+      input = "foo(1, -1, 1.1)"
       output = [["foo", [1, -1, 1.1], nil]]
 
       assert parse(input) == output
     end
 
     test "parses key/value pairs" do
-      input = "foo(bar: \"baz\")"
-      output = [["foo", [["bar", "baz"]], nil]]
+      input = "foo(bar: \"baz\", qux: \"quux\")"
+      output = [["foo", [["bar", "baz"], ["qux", "quux"]], nil]]
 
       assert parse(input) == output
     end
 
     test "parses bool and nil values" do
-      input = "foo(true false nil)"
+      input = "foo(true, false, nil)"
       output = [["foo", [true, false, nil], nil]]
 
       assert parse(input) == output
