@@ -48,26 +48,26 @@ defmodule BracketAttributes do
     export_combinator: true
   )
 
+  @bracket_child [
+    parsec(:nested_attribute),
+    key_value_pair,
+    float,
+    int(),
+    true_value,
+    false_value,
+    null,
+    atom(),
+    variable(),
+    dotted_word(),
+    double_quoted_string()
+  ]
+
   defparsec(
     :maybe_brackets,
     ignore_whitespace()
     |> ignore(string("("))
     |> ignore_whitespace()
-    |> repeat(
-      choice([
-        parsec(:nested_attribute),
-        key_value_pair,
-        float,
-        int(),
-        true_value,
-        false_value,
-        null,
-        word(),
-        dotted_word(),
-        double_quoted_string()
-      ])
-      |> ignore_whitespace()
-    )
+    |> comma_separated_list(choice(@bracket_child))
     |> ignore(string(")")),
     export_combinator: true
   )

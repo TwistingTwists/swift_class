@@ -48,6 +48,16 @@ defmodule SwiftClassTest do
       assert parse(input) == output
     end
 
+    test "parses single modifier with atom" do
+      input = "font(:largeTitle)"
+
+      output = [
+        ["font", [["IME", "largeTitle"]], nil]
+      ]
+
+      assert parse(input) == output
+    end
+
     test "parses multiple modifiers" do
       input = "font(:largeTitle) bold(true) italic(true)"
 
@@ -127,34 +137,94 @@ defmodule SwiftClassTest do
   end
 
   describe "class block parser" do
-    input = """
-    "color-" <> color_name do
-      foo(true)
-      color(color_name)
-      bar(false)
+    test "parses a simple block" do
+      input = """
+      "red-header" do
+        color(:red)
+        font(:largeTitle)
+      end
+      """
+
+      output = [
+        {
+          "red-header",
+          [
+            ["color", [["IME", "red"]], nil],
+            ["font", [["IME", "largeTitle"]], nil]
+          ]
+        }
+      ]
+
+      assert parse_class_block(input) == output
     end
 
-    "color-red" do
-      color(:red)
+    test "parses a complex block" do
+      input = """
+      "color-" <> color_name do
+        foo(true)
+        color(color_name)
+        bar(false)
+      end
+      """
+
+      output = [
+        {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color_name, [], Elixir}]},
+         [
+           ["foo", [true], nil],
+           ["color", [{:color_name, [], Elixir}], nil],
+           ["bar", [false], nil]
+         ]}
+      ]
+
+      assert parse_class_block(input) == output
     end
-    """
 
-    output = [
-      {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color_name, [], Elixir}]},
-      [
-        ["foo", [true], nil],
-        ["color", [{:color_name, [], Elixir}], nil],
-        ["bar", [false], nil]
-      ]},
-      {
-        "color-red",
-        [
-          ["color", [["IME", "red"]], nil]
-        ]
-      }
+    test "parses a complex block (2)" do
+      input = """
+      "color-" <> color do
+        color(color)
+      end
+      """
 
-    ]
+      output = [
+        {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color, [], Elixir}]},
+         [
+           ["color", [{:color, [], Elixir}], nil]
+         ]}
+      ]
 
-    # assert parse_class_block(input) == output
+      assert parse_class_block(input) == output
+    end
+
+    test "parses multiple blocks" do
+      input = """
+      "color-" <> color_name do
+        foo(true)
+        color(color_name)
+        bar(false)
+      end
+
+      "color-red" do
+        color(:red)
+      end
+      """
+
+      output = [
+        {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color_name, [], Elixir}]},
+         [
+           ["foo", [true], nil],
+           ["color", [{:color_name, [], Elixir}], nil],
+           ["bar", [false], nil]
+         ]},
+        {
+          "color-red",
+          [
+            ["color", [["IME", "red"]], nil]
+          ]
+        }
+      ]
+
+      assert parse_class_block(input) == output
+    end
   end
 end
