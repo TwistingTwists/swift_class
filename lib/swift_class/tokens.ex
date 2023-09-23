@@ -1,4 +1,4 @@
-defmodule Words do
+defmodule SwiftClass.Tokens do
   import NimbleParsec
 
   def whitespace(opts) do
@@ -6,6 +6,7 @@ defmodule Words do
   end
 
   def minus, do: string("-")
+
   def plus, do: string("+")
 
   def int do
@@ -15,8 +16,20 @@ defmodule Words do
     |> map({String, :to_integer, []})
   end
 
+  def atom do
+    string(":")
+    |> replace("IME")
+    |> concat(word())
+    |> wrap()
+  end
+
   def word do
     ascii_string([?a..?z, ?A..?Z, ?0..?9, ?_], min: 1)
+  end
+
+  def variable do
+    word()
+    |> post_traverse({:inject_variables, []})
   end
 
   def dotted_word do
@@ -51,20 +64,33 @@ defmodule Words do
     combinator |> ignore(optional(whitespace(min: 1)))
   end
 
-  def append_value(rest, args, context, _line, _offset, value) do
-    {rest, args ++ [value], context}
+  def comma_separated_list(combinator, elem_combinator) do
+    delimiter_separated_list(combinator, elem_combinator, ",", true)
   end
 
-  def prepend_value(rest, args, context, _line, _offset, value) do
-    {rest, [value | args], context}
+  def delimiter_separated_list(combinator, elem_combinator, delimiter, allow_empty \\ true) do
+    combinator
+    |> choice(
+      [
+        #  1+ elems
+        elem_combinator
+        |> ignore_whitespace()
+        |> repeat(
+          ignore(string(delimiter))
+          |> ignore_whitespace()
+          |> concat(elem_combinator)
+          |> ignore_whitespace()
+        ),
+      ] ++
+        if allow_empty do
+          [
+            # 0 elems
+            empty()
+            |> ignore_whitespace()
+          ]
+        else
+          []
+        end
+    )
   end
-
-  def flip_attr(rest, [[attr], "attr"], context, _line, _offset) when is_binary(attr) do
-    {rest, [:attr, attr], context}
-  end
-
-  # flip_attr should only be called when an "attr" is expected
-  # def flip_attr(rest, args, context, _line, _offset) do
-  #   {rest, args, context}
-  # end
 end
