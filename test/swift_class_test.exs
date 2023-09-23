@@ -149,7 +149,7 @@ defmodule SwiftClassTest do
       {
         "color-red",
         [
-          ["color", [["IME", "red"]]]
+          ["color", [["IME", "red"]], nil]
         ]
       }
 
