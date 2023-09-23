@@ -1,5 +1,6 @@
-defmodule BracketAttributes do
-  import Words
+defmodule SwiftClass.Modifiers do
+  import SwiftClass.Tokens
+  import SwiftClass.PostProcessors
   import NimbleParsec
 
   true_value =
@@ -68,21 +69,24 @@ defmodule BracketAttributes do
     |> ignore(string("("))
     |> ignore_whitespace()
     |> comma_separated_list(choice(@bracket_child))
-    |> ignore(string(")")),
-    export_combinator: true
+    |> ignore(string(")"))
   )
 
   defparsec(
     :attribute,
     choice([
-      # standalone attribute - eg.
-      # bold
-
       parsec(:maybe_brackets),
       whitespace(min: 1) |> replace(true)
     ])
     |> wrap()
-    |> parsec(:content_name),
+    |> parsec(:content_name)
+  )
+
+  defparsec(
+    :modifier,
+    word()
+    |> parsec(:attribute)
+    |> wrap(),
     export_combinator: true
   )
 
