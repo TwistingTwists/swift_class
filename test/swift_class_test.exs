@@ -227,4 +227,54 @@ defmodule SwiftClassTest do
       assert parse_class_block(input) == output
     end
   end
+
+  describe "helper functions" do
+    test "to_atom" do
+      input = "buttonStyle(style: to_atom(style))"
+
+      output = [["buttonStyle", [["style", {:to_atom, [], [{:style, [], Elixir}]}]], nil]]
+
+      assert parse(input) == output
+    end
+
+    test "to_integer" do
+      input = "frame(height: to_integer(height))"
+
+      output = [["frame", [["height", {:to_integer, [], [{:height, [], Elixir}]}]], nil]]
+
+      assert parse(input) == output
+    end
+
+    test "to_float" do
+      input = "kerning(kerning: to_float(kerning))"
+
+      output = [["kerning", [["kerning", {:to_float, [], [{:kerning, [], Elixir}]}]], nil]]
+
+      assert parse(input) == output
+    end
+
+    test "to_boolean" do
+      input = "hidden(to_bool(is_hidden))"
+
+      output = [["hidden", [{:to_boolean, [], [{:is_hidden, [], Elixir}]}], nil]]
+
+      assert parse(input) == output
+    end
+
+    test "camelize" do
+      input = "font(family: camelize(family))"
+
+      output = [["font", [["family", {:camelize, [], [{:family, [], Elixir}]}]], nil]]
+
+      assert parse(input) == output
+    end
+
+    test "snake_case" do
+      input = "font(family: snake_case(family))"
+
+      output = [["font", [["family", {:snake_case, [], [{:family, [], Elixir}]}]], nil]]
+
+      assert parse(input) == output
+    end
+  end
 end
