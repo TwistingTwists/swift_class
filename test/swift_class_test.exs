@@ -228,7 +228,6 @@ defmodule SwiftClassTest do
     end
   end
 
-
   describe "helper functions" do
     test "to_atom" do
       input = "buttonStyle(style: to_atom(style))"
