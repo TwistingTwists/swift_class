@@ -29,7 +29,7 @@ defmodule SwiftClass.Tokens do
 
   def variable do
     word()
-    |> post_traverse({:inject_variables, []})
+    |> post_traverse({:to_variable_ast, []})
   end
 
   def dotted_word do
@@ -80,7 +80,7 @@ defmodule SwiftClass.Tokens do
           |> ignore_whitespace()
           |> concat(elem_combinator)
           |> ignore_whitespace()
-        ),
+        )
       ] ++
         if allow_empty do
           [

@@ -1,6 +1,7 @@
 defmodule SwiftClass.Modifiers do
   import SwiftClass.Tokens
   import SwiftClass.PostProcessors
+  import SwiftClass.HelperFunctions
   import NimbleParsec
 
   true_value =
@@ -31,7 +32,7 @@ defmodule SwiftClass.Modifiers do
     |> ignore_whitespace()
     |> concat(ignore(string(":")))
     |> ignore_whitespace()
-    |> concat(choice([word(), double_quoted_string()]))
+    |> concat(choice([parsec(:nested_attribute), variable(), double_quoted_string()]))
     |> wrap()
 
   defparsec(
@@ -41,6 +42,9 @@ defmodule SwiftClass.Modifiers do
       |> wrap(parsec(:maybe_brackets))
       |> post_traverse({:flip_attr, []})
       |> wrap(),
+      helper_function()
+      |> parsec(:maybe_brackets)
+      |> post_traverse({:helper_function_to_ast, []}),
       word()
       |> wrap(parsec(:maybe_brackets))
       |> parsec(:content_name)
