@@ -3,19 +3,19 @@ defmodule SwiftClass.Blocks do
   import NimbleParsec
   import SwiftClass.Tokens
 
-  def double_quoted_string_with_variable do
-    double_quoted_string()
+  def string_with_variable do
+    string()
     |> ignore_whitespace()
     |> ignore(string("<>"))
     |> ignore_whitespace()
-    |> concat(word())
+    |> concat(quoted_variable())
     |> post_traverse({:block_open_with_variable_to_ast, []})
   end
 
   def block_open do
     choice([
-      double_quoted_string_with_variable(),
-      double_quoted_string()
+      string_with_variable(),
+      string()
     ])
     |> ignore_whitespace()
     |> ignore(string("do"))

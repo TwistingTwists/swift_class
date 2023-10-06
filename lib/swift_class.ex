@@ -6,13 +6,15 @@ defmodule SwiftClass do
   import SwiftClass.PostProcessors
   import SwiftClass.Tokens
 
-  classnames =
-    repeat(
-      ignore(whitespace(min: 0))
-      |> parsec(:modifier)
-    )
+  def parse(input) do
+    case SwiftClass.Modifiers.modifiers(input) do
+      {:ok, [output], a, b, c, d} ->
+        {:ok, output, a, b, c, d}
 
-  defparsec(:parse, classnames)
+      other ->
+        other
+    end
+  end
 
   classblocks =
     repeat(

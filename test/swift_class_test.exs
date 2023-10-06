@@ -17,21 +17,44 @@ defmodule SwiftClassTest do
   describe "parse/1" do
     test "parses modifier function definition" do
       input = "bold(true)"
-      output = [["bold", [true], nil]]
+      output = {:bold, [], [true]}
 
       assert parse(input) == output
     end
 
     test "parses modifier function with content syntax" do
       input = "background(){:content}"
-      output = [["background", [], :content]]
+      output = {:background, [], [[content: :content]]}
+
+      assert parse(input) == output
+
+      # permits whitespace surrounds
+      input = "background() { :content }"
+
+      assert parse(input) == output
+
+      # permits array of content references
+
+      input = "background() { [:content1, :content2] }"
+
+      output = {:background, [], [[content: [:content1, :content2]]]}
+
+      assert parse(input) == output
+
+      # permits multiline
+      input = """
+      background() {
+        :content1
+        :content2
+      }
+      """
 
       assert parse(input) == output
     end
 
     test "parses modifier with multiple arguments" do
       input = "background(\"foo\", \"bar\")"
-      output = [["background", ["foo", "bar"], nil]]
+      output = {:background, [], ["foo", "bar"]}
 
       assert parse(input) == output
 
@@ -48,39 +71,77 @@ defmodule SwiftClassTest do
       assert parse(input) == output
     end
 
-    test "parses single modifier with atom" do
-      input = "font(:largeTitle)"
+    test "parses single modifier with atom as IME" do
+      input = "font(.largeTitle)"
 
-      output = [
-        ["font", [["IME", "largeTitle"]], nil]
-      ]
+      output = {:font, [], [{:., [], [nil, :largeTitle]}]}
+
+      assert parse(input) == output
+    end
+
+    test "parses chained IMEs" do
+      input = "font(color: Color.red)"
+
+      output = {:font, [], [[color: {:., [], [:Color, :red]}]]}
+
+      assert parse(input) == output
+
+      input = "font(color: Color.red.shadow(.thick))"
+
+      output =
+        {:font, [],
+         [[color: {:., [], [:Color, {:., [], [:red, {:shadow, [], [{:., [], [nil, :thick]}]}]}]}]]}
+
+      assert parse(input) == output
+    end
+
+    test "parses chained IMEs within the content block" do
+      input = "background() { Color.red }"
+
+      output = {:background, [], [[content: {:., [], [:Color, :red]}]]}
 
       assert parse(input) == output
     end
 
     test "parses multiple modifiers" do
-      input = "font(:largeTitle) bold(true) italic(true)"
+      input = "font(.largeTitle) bold(true) italic(true)"
 
       output = [
-        ["font", [["IME", "largeTitle"]], nil],
-        ["bold", [true], nil],
-        ["italic", [true], nil]
+        {:font, [], [{:., [], [nil, :largeTitle]}]},
+        {:bold, [], [true]},
+        {:italic, [], [true]}
       ]
+
+      assert parse(input) == output
+    end
+
+    test "parses complex modifier chains" do
+      input = "color(color: .foo.bar.baz(1, 2).qux)"
+
+      output =
+        {:color, [],
+         [
+           [
+             color:
+               {:., [],
+                [nil, {:., [], [:foo, {:., [], [:bar, {:., [], [{:baz, [], [1, 2]}, :qux]}]}]}]}
+           ]
+         ]}
 
       assert parse(input) == output
     end
 
     test "parses multiline" do
       input = """
-      font(:largeTitle)
+      font(.largeTitle)
       bold(true)
       italic(true)
       """
 
       output = [
-        ["font", [["IME", "largeTitle"]], nil],
-        ["bold", [true], nil],
-        ["italic", [true], nil]
+        {:font, [], [{:., [], [nil, :largeTitle]}]},
+        {:bold, [], [true]},
+        {:italic, [], [true]}
       ]
 
       assert parse(input) == output
@@ -88,49 +149,49 @@ defmodule SwiftClassTest do
 
     test "parses string literal value type" do
       input = "foo(\"bar\")"
-      output = [["foo", ["bar"], nil]]
+      output = {:foo, [], ["bar"]}
 
       assert parse(input) == output
     end
 
     test "parses numerical types" do
       input = "foo(1, -1, 1.1)"
-      output = [["foo", [1, -1, 1.1], nil]]
+      output = {:foo, [], [1, -1, 1.1]}
 
       assert parse(input) == output
     end
 
     test "parses key/value pairs" do
-      input = ~s|foo(bar: "baz", qux: "quux")|
-      output = [["foo", [["bar", "baz"], ["qux", "quux"]], nil]]
+      input = ~s|foo(bar: "baz", qux: .quux)|
+      output = {:foo, [], [[bar: "baz", qux: {:., [], [nil, :quux]}]]}
 
       assert parse(input) == output
     end
 
     test "parses bool and nil values" do
       input = "foo(true, false, nil)"
-      output = [["foo", [true, false, nil], nil]]
+      output = {:foo, [], [true, false, nil]}
 
       assert parse(input) == output
     end
 
     test "parses Implicit Member Expressions" do
-      input = "color(:red)"
-      output = [["color", [["IME", "red"]], nil]]
+      input = "color(.red)"
+      output = {:color, [], [{:., [], [nil, :red]}]}
 
       assert parse(input) == output
     end
 
     test "parses nested function calls" do
       input = ~s|foo(bar("baz"))|
-      output = [["foo", [["bar", ["baz"], nil]], nil]]
+      output = {:foo, [], [{:bar, [], ["baz"]}]}
 
       assert parse(input) == output
     end
 
     test "parses attr value references" do
       input = ~s|foo(attr("bar"))|
-      output = [["foo", [["Attr", "bar"]], nil]]
+      output = {:foo, [], [{:__attr__, [], "bar"}]}
 
       assert parse(input) == output
     end
@@ -140,8 +201,8 @@ defmodule SwiftClassTest do
     test "parses a simple block" do
       input = """
       "red-header" do
-        color(:red)
-        font(:largeTitle)
+        color(.red)
+        font(.largeTitle)
       end
       """
 
@@ -149,8 +210,8 @@ defmodule SwiftClassTest do
         {
           "red-header",
           [
-            ["color", [["IME", "red"]], nil],
-            ["font", [["IME", "largeTitle"]], nil]
+            {:color, [], [{:., [], [nil, :red]}]},
+            {:font, [], [{:., [], [nil, :largeTitle]}]}
           ]
         }
       ]
@@ -170,9 +231,9 @@ defmodule SwiftClassTest do
       output = [
         {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color_name, [], Elixir}]},
          [
-           ["foo", [true], nil],
-           ["color", [{:color_name, [], Elixir}], nil],
-           ["bar", [false], nil]
+           {:foo, [], [true]},
+           {:color, [], [{Elixir, [], {:color_name, [], Elixir}}]},
+           {:bar, [], [false]}
          ]}
       ]
 
@@ -189,7 +250,7 @@ defmodule SwiftClassTest do
       output = [
         {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color, [], Elixir}]},
          [
-           ["color", [{:color, [], Elixir}], nil]
+           {:color, [], [{Elixir, [], {:color, [], Elixir}}]}
          ]}
       ]
 
@@ -205,21 +266,21 @@ defmodule SwiftClassTest do
       end
 
       "color-red" do
-        color(:red)
+        color(.red)
       end
       """
 
       output = [
         {{:<>, [context: Elixir, imports: [{2, Kernel}]], ["color-", {:color_name, [], Elixir}]},
          [
-           ["foo", [true], nil],
-           ["color", [{:color_name, [], Elixir}], nil],
-           ["bar", [false], nil]
+           {:foo, [], [true]},
+           {:color, [], [{Elixir, [], {:color_name, [], Elixir}}]},
+           {:bar, [], [false]}
          ]},
         {
           "color-red",
           [
-            ["color", [["IME", "red"]], nil]
+            {:color, [], [{:., [], [nil, :red]}]}
           ]
         }
       ]
@@ -232,7 +293,7 @@ defmodule SwiftClassTest do
     test "to_atom" do
       input = "buttonStyle(style: to_atom(style))"
 
-      output = [["buttonStyle", [["style", {:to_atom, [], [{:style, [], Elixir}]}]], nil]]
+      output = {:buttonStyle, [], [[style: {Elixir, [], {:to_atom, [], [{:style, [], Elixir}]}}]]}
 
       assert parse(input) == output
     end
@@ -240,7 +301,7 @@ defmodule SwiftClassTest do
     test "to_integer" do
       input = "frame(height: to_integer(height))"
 
-      output = [["frame", [["height", {:to_integer, [], [{:height, [], Elixir}]}]], nil]]
+      output = {:frame, [], [[height: {Elixir, [], {:to_integer, [], [{:height, [], Elixir}]}}]]}
 
       assert parse(input) == output
     end
@@ -248,7 +309,8 @@ defmodule SwiftClassTest do
     test "to_float" do
       input = "kerning(kerning: to_float(kerning))"
 
-      output = [["kerning", [["kerning", {:to_float, [], [{:kerning, [], Elixir}]}]], nil]]
+      output =
+        {:kerning, [], [[kerning: {Elixir, [], {:to_float, [], [{:kerning, [], Elixir}]}}]]}
 
       assert parse(input) == output
     end
@@ -256,7 +318,7 @@ defmodule SwiftClassTest do
     test "to_boolean" do
       input = "hidden(to_boolean(is_hidden))"
 
-      output = [["hidden", [{:to_boolean, [], [{:is_hidden, [], Elixir}]}], nil]]
+      output = {:hidden, [], [{Elixir, [], {:to_boolean, [], [{:is_hidden, [], Elixir}]}}]}
 
       assert parse(input) == output
     end
@@ -264,7 +326,7 @@ defmodule SwiftClassTest do
     test "camelize" do
       input = "font(family: camelize(family))"
 
-      output = [["font", [["family", {:camelize, [], [{:family, [], Elixir}]}]], nil]]
+      output = {:font, [], [[family: {Elixir, [], {:camelize, [], [{:family, [], Elixir}]}}]]}
 
       assert parse(input) == output
     end
@@ -272,7 +334,7 @@ defmodule SwiftClassTest do
     test "snake_case" do
       input = "font(family: snake_case(family))"
 
-      output = [["font", [["family", {:snake_case, [], [{:family, [], Elixir}]}]], nil]]
+      output = {:font, [], [[family: {Elixir, [], {:snake_case, [], [{:family, [], Elixir}]}}]]}
 
       assert parse(input) == output
     end

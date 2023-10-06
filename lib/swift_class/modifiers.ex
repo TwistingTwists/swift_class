@@ -4,109 +4,134 @@ defmodule SwiftClass.Modifiers do
   import SwiftClass.HelperFunctions
   import NimbleParsec
 
-  true_value =
-    string("true")
-    |> replace(true)
-
-  false_value =
-    string("false")
-    |> replace(false)
-
-  null =
-    string("nil")
-    |> replace(nil)
-
-  frac =
-    string(".")
-    |> concat(integer(min: 1))
-
-  float =
-    int()
-    |> concat(frac)
-    |> reduce({Enum, :join, [""]})
-    |> map({String, :to_float, []})
-
   key_value_pair =
     ignore_whitespace()
-    |> concat(choice([word(), double_quoted_string()]))
-    |> ignore_whitespace()
+    |> concat(word())
     |> concat(ignore(string(":")))
     |> ignore_whitespace()
-    |> concat(choice([parsec(:nested_attribute), variable(), double_quoted_string()]))
+    |> concat(
+      choice([
+        literal(),
+        parsec(:ime),
+        parsec(:nested_attribute),
+        parsec(:key_value_list),
+        variable()
+      ])
+    )
+    |> post_traverse({:to_keyword_tuple_ast, []})
+
+  defparsec(
+    :key_value_pairs,
+    ignore_whitespace()
+    |> non_empty_comma_separated_list(key_value_pair)
+    |> ignore_whitespace()
     |> wrap()
+  )
+
+  defparsec(
+    :key_value_list,
+    enclosed("[", parsec(:key_value_pairs), "]")
+  )
+
+  # .baz
+  # .baz(0.1)
+  implicit_ime = fn is_initial ->
+    ignore(string("."))
+    |> concat(word())
+    |> wrap(optional(parsec(:brackets)))
+    |> post_traverse({:to_implicit_ime_ast, [is_initial]})
+  end
+
+  # Foo.bar
+  # Foo.baz(0.1)
+  scoped_ime =
+    module_name()
+    |> ignore(string("."))
+    |> concat(word())
+    |> wrap(optional(parsec(:brackets)))
+    |> post_traverse({:to_scoped_ime_ast, []})
+
+  defparsec(
+    :ime,
+    choice([
+      # Scoped
+      # Color.red
+      scoped_ime,
+      # Implicit
+      # .red
+      implicit_ime.(true)
+    ])
+    |> repeat(
+      # <other_ime>.red
+      implicit_ime.(false)
+    )
+    |> post_traverse({:chain_ast, []})
+  )
 
   defparsec(
     :nested_attribute,
     choice([
+      #
       string("attr")
-      |> wrap(parsec(:maybe_brackets))
-      |> post_traverse({:flip_attr, []})
-      |> wrap(),
+      |> wrap(parsec(:brackets))
+      |> post_traverse({:to_attr_ast, []}),
+      #
       helper_function()
-      |> parsec(:maybe_brackets)
-      |> post_traverse({:helper_function_to_ast, []}),
+      |> enclosed("(", quoted_variable(), ")")
+      |> post_traverse({:to_function_call_ast, []})
+      |> post_traverse({:tag_as_elixir_code, []}),
+      #
       word()
-      |> wrap(parsec(:maybe_brackets))
-      |> parsec(:content_name)
-      |> wrap()
-    ]),
-    export_combinator: true
+      |> parsec(:brackets)
+      |> post_traverse({:to_function_call_ast, []})
+    ])
   )
 
   @bracket_child [
+    literal(),
+    parsec(:key_value_pairs),
     parsec(:nested_attribute),
-    key_value_pair,
-    float,
-    int(),
-    true_value,
-    false_value,
-    null,
-    atom(),
-    variable(),
-    dotted_word(),
-    double_quoted_string()
+    parsec(:ime),
+    variable()
   ]
 
   defparsec(
-    :maybe_brackets,
-    ignore_whitespace()
-    |> ignore(string("("))
-    |> ignore_whitespace()
-    |> comma_separated_list(choice(@bracket_child))
-    |> ignore(string(")"))
-  )
-
-  defparsec(
-    :attribute,
-    choice([
-      parsec(:maybe_brackets),
-      whitespace(min: 1) |> replace(true)
-    ])
-    |> wrap()
-    |> parsec(:content_name)
+    :brackets,
+    enclosed("(", comma_separated_list(choice(@bracket_child)), ")")
   )
 
   defparsec(
     :modifier,
-    word()
-    |> parsec(:attribute)
-    |> wrap(),
+    ignore_whitespace()
+    |> concat(word())
+    |> parsec(:brackets)
+    |> parsec(:maybe_content)
+    |> post_traverse({:to_function_call_ast, []}),
     export_combinator: true
   )
 
-  valid_content_name =
-    ignore(string("{"))
-    |> concat(ignore(string(":")))
-    |> concat(word())
-    |> ignore(string("}"))
-    |> map({String, :to_atom, []})
+  defparsec(
+    :modifiers,
+    repeat(parsec(:modifier)),
+    export_combinator: true
+  )
 
-  # if there is no content_name, append nil
-  invalid_content_name = empty() |> post_traverse({:append_value, [nil]})
+  content =
+    choice([
+      enclosed("[", comma_separated_list(choice(@bracket_child)), "]"),
+      #
+      newline_separated_list(choice(@bracket_child)),
+      #
+      choice(@bracket_child)
+    ])
+    |> post_traverse({:tag_as_content, []})
+    |> wrap()
 
   defparsec(
-    :content_name,
-    choice([valid_content_name, invalid_content_name]),
-    export_combinator: true
+    :maybe_content,
+    choice([
+      enclosed("{", content, "}"),
+      empty()
+    ])
   )
 end
